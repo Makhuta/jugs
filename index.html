@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jugs Game</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+        }
+        
+        .game-container {
+            background: rgba(30, 30, 50, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            margin: 10px;
+            max-width: 900px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (min-width: 768px) {
+            .game-container {
+                margin: 20px auto;
+            }
+        }
+        
+        .game-title {
+            background: linear-gradient(45deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            font-weight: bold;
+        }
+        
+        .jugs-container {
+            position: relative;
+        }
+        
+        .jug-card {
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            background: transparent;
+            color: #e0e0e0;
+            min-height: 200px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        @media (max-width: 767px) {
+            .jug-card {
+                margin-bottom: 15px;
+                min-height: 180px;
+            }
+        }
+        
+        .jug-card:hover {
+            transform: translateY(-10px) scale(1.02);
+        }
+        
+        .jug-card.selected {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            transform: translateY(-10px) scale(1.05);
+        }
+        
+        .jug-card.can-receive {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .jug-card.can-pour {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translateY(-5px) scale(1); }
+            50% { transform: translateY(-8px) scale(1.03); }
+            100% { transform: translateY(-5px) scale(1); }
+        }
+        
+        .jug-visual {
+            width: 60px;
+            height: 100px;
+            border: 3px solid #34495e;
+            border-radius: 0 0 12px 12px;
+            background: linear-gradient(to top, 
+                #3498db 0%, 
+                #3498db var(--fill-percent), 
+                transparent var(--fill-percent)
+            );
+            position: relative;
+            margin: 0 auto 10px;
+            transition: all 0.5s ease;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @media (min-width: 576px) {
+            .jug-visual {
+                width: 70px;
+                height: 120px;
+                border: 4px solid #34495e;
+                border-radius: 0 0 15px 15px;
+                margin: 0 auto 15px;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .jug-visual {
+                width: 80px;
+                height: 140px;
+            }
+        }
+        
+        .jug-card.selected .jug-visual {
+            border-color: white;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2);
+        }
+        
+        .water-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, 
+                rgba(52, 152, 219, 0.8) 0%, 
+                rgba(52, 152, 219, 0.8) var(--animation-percent), 
+                transparent var(--animation-percent)
+            );
+            opacity: 0;
+            transition: all 0.8s ease;
+        }
+        
+        .pouring {
+            animation: pour 1s ease-in-out;
+        }
+        
+        @keyframes pour {
+            0% { --animation-percent: var(--old-fill); opacity: 1; }
+            50% { --animation-percent: 0%; opacity: 0.7; }
+            100% { --animation-percent: var(--new-fill); opacity: 0; }
+        }
+        
+        .filling {
+            animation: fill 1s ease-in-out;
+        }
+        
+        @keyframes fill {
+            0% { --animation-percent: var(--old-fill); opacity: 1; }
+            100% { --animation-percent: var(--new-fill); opacity: 0; }
+        }
+        
+        .source-drain-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid;
+            background: #2c2c54;
+            color: #e0e0e0;
+            min-height: 100px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        @media (max-width: 767px) {
+            .source-drain-card {
+                margin-bottom: 10px;
+                padding: 15px 10px;
+            }
+        }
+        
+        .source-card {
+            border-color: #5dade2;
+            color: #85c1e9;
+        }
+        
+        .source-card:hover {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .drain-card {
+            border-color: #f1948a;
+            color: #ec7063;
+        }
+        
+        .drain-card:hover {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .source-card.active, .drain-card.active {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .pour-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #3498db, #2ecc71);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .pour-indicator.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        
+        .victory-alert {
+            animation: celebration 0.8s ease-in-out;
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            border: none;
+            color: white;
+            box-shadow: 0 10px 20px rgba(46, 204, 113, 0.3);
+        }
+        
+        @keyframes celebration {
+            0% { transform: scale(0.8) rotate(-5deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(2deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        
+        .step-list {
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        @media (max-width: 767px) {
+            .step-list {
+                max-height: 200px;
+            }
+        }
+        
+        .step-item {
+            transition: all 0.2s ease;
+        }
+        
+        .step-item:hover {
+            background-color: rgba(52, 152, 219, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .jug-capacity {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .jug-current {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .btn-game {
+            border-radius: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            padding: 12px 20px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .btn-game:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        @media (max-width: 767px) {
+            .btn-game {
+                padding: 15px 25px;
+                font-size: 16px;
+                margin: 5px;
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-2 py-md-4">
+        <div class="game-container p-3 p-md-4">
+            <div class="text-center mb-4">
+                <h1 class="game-title display-4">
+                    <i class="fas fa-fill-drip me-2"></i>
+                    Kádinky
+                    <i class="fas fa-fill-drip ms-2"></i>
+                </h1>
+            </div>
+            
+            <div class="alert text-center mb-4" style="background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #58d68d;" role="alert">
+                <i class="fas fa-bullseye me-2"></i>
+                <strong>Cíl:</strong> Získejte přesně 4 litry v libovolné kádince
+            </div>
+            
+            <div class="alert text-center mb-4" style="background: rgba(52, 152, 219, 0.2); border: 1px solid #3498db; color: #5dade2;" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Jak hrát:</strong> Klikněte na kádinku pro výběr, poté klikněte na jinou kádinku pro přelití, nebo klikněte na zdroj/odtok pro naplnění/vyprázdnění.
+            </div>
+            
+            <div id="victory" class="alert victory-alert text-center mb-4 d-none" role="alert">
+                <i class="fas fa-trophy me-2"></i>
+                <strong>Gratulujeme! Získali jste 4 litry!</strong>
+                <i class="fas fa-trophy ms-2"></i>
+            </div>
+            
+            <!-- Zdroj a Odtok -->
+            <div class="row mb-3 mb-md-4">
+                <div class="col-sm-6 mb-2 mb-md-3">
+                    <div class="card source-drain-card source-card h-100" id="source" onclick="handleSourceDrainClick('source')">
+                        <div class="card-body text-center">
+                            <i class="fas fa-faucet fa-2x mb-2"></i>
+                            <h5 class="card-title">Zdroj vody</h5>
+                            <p class="card-text small">Klikněte pro naplnění vybrané kádinky</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 mb-2 mb-md-3">
+                    <div class="card source-drain-card drain-card h-100" id="drain" onclick="handleSourceDrainClick('drain')">
+                        <div class="card-body text-center">
+                            <i class="fas fa-tint-slash fa-2x mb-2"></i>
+                            <h5 class="card-title">Odtok</h5>
+                            <p class="card-text small">Klikněte pro vyprázdnění vybrané kádinky</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kádinky -->
+            <div class="jugs-container position-relative mb-3 mb-md-4">
+                <div class="row justify-content-center">
+                    <div class="col-4 mb-3">
+                        <div class="card jug-card h-100" id="jug-container-0" onclick="handleJugClick(0)">
+                            <div class="card-body text-center p-2 p-md-4">
+                                <div class="jug-visual" id="jug-0" style="--fill-percent: 0%">
+                                    <div class="water-animation" id="animation-0"></div>
+                                </div>
+                                <div class="jug-capacity">
+                                    <i class="fas fa-fill me-1"></i>8L
+                                </div>
+                                <div class="jug-current" id="current-0">0L</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-4 mb-3">
+                        <div class="card jug-card h-100" id="jug-container-1" onclick="handleJugClick(1)">
+                            <div class="card-body text-center p-2 p-md-4">
+                                <div class="jug-visual" id="jug-1" style="--fill-percent: 0%">
+                                    <div class="water-animation" id="animation-1"></div>
+                                </div>
+                                <div class="jug-capacity">
+                                    <i class="fas fa-fill me-1"></i>5L
+                                </div>
+                                <div class="jug-current" id="current-1">0L</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-4 mb-3">
+                        <div class="card jug-card h-100" id="jug-container-2" onclick="handleJugClick(2)">
+                            <div class="card-body text-center p-2 p-md-4">
+                                <div class="jug-visual" id="jug-2" style="--fill-percent: 0%">
+                                    <div class="water-animation" id="animation-2"></div>
+                                </div>
+                                <div class="jug-capacity">
+                                    <i class="fas fa-fill me-1"></i>3L
+                                </div>
+                                <div class="jug-current" id="current-2">0L</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pour-indicator" id="pour-indicator"></div>
+            </div>
+            
+            <!-- Herní ovládání -->
+            <div class="text-center mb-3 mb-md-4 d-flex flex-column flex-sm-row justify-content-center align-items-center gap-2">
+                <button class="btn btn-purple btn-game" id="undo-btn" onclick="undoStep()" disabled>
+                    <i class="fas fa-undo me-2"></i>Zpět krok
+                </button>
+                <button class="btn btn-secondary btn-game" onclick="resetGame()">
+                    <i class="fas fa-redo me-2"></i>Reset hry
+                </button>
+            </div>
+            
+            <!-- Historie kroků -->
+            <div class="row">
+                <div class="col-12 col-lg-8 mx-auto">
+                    <div class="card" style="background: #2c2c54; border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <div class="card-header" style="background: #3c3c6e; border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: #e0e0e0;">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list-ol me-2"></i>Provedené kroky
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="step-list" id="steps-list">
+                                <div class="step-item px-3 py-2 border-bottom">
+                                    <i class="fas fa-play me-2 text-success"></i>Hra začala
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Game state
+        const jugCapacities = [8, 5, 3];
+        let jugContents = [0, 0, 0];
+        let gameHistory = [];
+        let stepCount = 0;
+        let selectedJug = -1;
+        let isAnimating = false;
+        
+        // Initialize game
+        function initGame() {
+            jugContents = [0, 0, 0];
+            gameHistory = [{
+                jugs: [0, 0, 0],
+                description: "Hra začala"
+            }];
+            stepCount = 0;
+            selectedJug = -1;
+            updateDisplay();
+            updateUndoButton();
+            hideVictory();
+            clearSelection();
+        }
+        
+        // Handle jug clicks
+        function handleJugClick(jugIndex) {
+            if (isAnimating) return;
+            
+            if (selectedJug === -1) {
+                // No jug selected, select this one
+                selectJug(jugIndex);
+            } else if (selectedJug === jugIndex) {
+                // Same jug clicked, deselect
+                clearSelection();
+            } else {
+                // Different jug clicked, pour if possible
+                if (canPour(selectedJug, jugIndex)) {
+                    pourJug(selectedJug, jugIndex);
+                }
+                clearSelection();
+            }
+        }
+        
+        // Handle source/drain clicks
+        function handleSourceDrainClick(type) {
+            if (isAnimating || selectedJug === -1) return;
+            
+            if (type === 'source') {
+                fillJug(selectedJug);
+            } else if (type === 'drain') {
+                emptyJug(selectedJug);
+            }
+            clearSelection();
+        }
+        
+        // Select a jug
+        function selectJug(jugIndex) {
+            selectedJug = jugIndex;
+            updateJugStates();
+            
+            // Show source/drain as active
+            document.getElementById('source').classList.add('active');
+            document.getElementById('drain').classList.add('active');
+        }
+        
+        // Clear selection
+        function clearSelection() {
+            selectedJug = -1;
+            updateJugStates();
+            
+            // Remove active state from source/drain
+            document.getElementById('source').classList.remove('active');
+            document.getElementById('drain').classList.remove('active');
+        }
+        
+        // Update jug visual states
+        function updateJugStates() {
+            for (let i = 0; i < 3; i++) {
+                const jugElement = document.getElementById(`jug-container-${i}`);
+                jugElement.classList.remove('selected', 'can-pour', 'can-receive');
+                
+                if (i === selectedJug) {
+                    jugElement.classList.add('selected');
+                } else if (selectedJug !== -1) {
+                    if (canPour(selectedJug, i)) {
+                        jugElement.classList.add('can-receive');
+                    }
+                    if (canPour(i, selectedJug)) {
+                        jugElement.classList.add('can-pour');
+                    }
+                }
+            }
+        }
+        
+        // Check if pouring is possible
+        function canPour(fromIndex, toIndex) {
+            return jugContents[fromIndex] > 0 && 
+                   jugContents[toIndex] < jugCapacities[toIndex];
+        }
+        
+        // Animate water level change
+        function animateWaterChange(jugIndex, oldAmount, newAmount, animationType = 'fill') {
+            const animation = document.getElementById(`animation-${jugIndex}`);
+            const oldPercent = (oldAmount / jugCapacities[jugIndex]) * 100;
+            const newPercent = (newAmount / jugCapacities[jugIndex]) * 100;
+            
+            animation.style.setProperty('--old-fill', `${oldPercent}%`);
+            animation.style.setProperty('--new-fill', `${newPercent}%`);
+            animation.classList.add(animationType);
+            
+            setTimeout(() => {
+                animation.classList.remove(animationType);
+            }, 800);
+        }
+        
+        // Show pour indicator
+        function showPourIndicator(fromIndex, toIndex, amount) {
+            const indicator = document.getElementById('pour-indicator');
+            indicator.innerHTML = `<i class="fas fa-exchange-alt me-2"></i>Pouring ${amount}L`;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1000);
+        }
+        
+        // Save current state to history
+        function saveState(description) {
+            gameHistory.push({
+                jugs: [...jugContents],
+                description: description
+            });
+            stepCount++;
+            updateStepsList();
+            updateUndoButton();
+            saveGame();
+        }
+        
+        // Fill a jug completely
+        function fillJug(jugIndex) {
+            if (jugContents[jugIndex] === jugCapacities[jugIndex]) return;
+            const oldAmount = jugContents[jugIndex];
+            jugContents[jugIndex] = jugCapacities[jugIndex];
+            isAnimating = true;
+            animateWaterChange(jugIndex, oldAmount, jugContents[jugIndex], 'filling');
+            saveState(`Naplněna ${jugCapacities[jugIndex]}L kádinka ze zdroje`);
+            setTimeout(() => {
+                updateDisplay();
+                checkVictory();
+                isAnimating = false;
+            }, 400);
+        }
+
+        function emptyJug(jugIndex) {
+            if (jugContents[jugIndex] === 0) return;
+            const oldAmount = jugContents[jugIndex];
+            jugContents[jugIndex] = 0;
+            isAnimating = true;
+            animateWaterChange(jugIndex, oldAmount, jugContents[jugIndex], 'pouring');
+            saveState(`Vyprázdněna ${jugCapacities[jugIndex]}L kádinka do odtoku`);
+            setTimeout(() => {
+                updateDisplay();
+                isAnimating = false;
+            }, 400);
+        }
+
+        function pourJug(fromIndex, toIndex) {
+            if (!canPour(fromIndex, toIndex)) return;
+            const amountToPour = Math.min(
+                jugContents[fromIndex],
+                jugCapacities[toIndex] - jugContents[toIndex]
+            );
+            const oldFromAmount = jugContents[fromIndex];
+            const oldToAmount = jugContents[toIndex];
+            jugContents[fromIndex] -= amountToPour;
+            jugContents[toIndex] += amountToPour;
+            isAnimating = true;
+            showPourIndicator(fromIndex, toIndex, amountToPour);
+            animateWaterChange(fromIndex, oldFromAmount, jugContents[fromIndex], 'pouring');
+            animateWaterChange(toIndex, oldToAmount, jugContents[toIndex], 'filling');
+            saveState(`Přelito ${amountToPour}L z ${jugCapacities[fromIndex]}L kádinky do ${jugCapacities[toIndex]}L kádinky`);
+            setTimeout(() => {
+                updateDisplay();
+                checkVictory();
+                isAnimating = false;
+            }, 800);
+        }
+        
+        // Undo the last step
+        function undoStep() {
+            if (gameHistory.length <= 1) return;
+            
+            gameHistory.pop();
+            stepCount--;
+            
+            const lastState = gameHistory[gameHistory.length - 1];
+            jugContents = [...lastState.jugs];
+            
+            clearSelection();
+            updateDisplay();
+            updateStepsList();
+            updateUndoButton();
+            hideVictory();
+        }
+        
+        // Reset the entire game
+        function resetGame() {
+            initGame();
+            updateStepsList();
+        }
+        
+        // Update the visual display of jugs
+        function updateDisplay() {
+            for (let i = 0; i < 3; i++) {
+                const fillPercent = (jugContents[i] / jugCapacities[i]) * 100;
+                document.getElementById(`jug-${i}`).style.setProperty('--fill-percent', `${fillPercent}%`);
+                document.getElementById(`current-${i}`).textContent = `${jugContents[i]}L`;
+            }
+        }
+        
+        // Update the steps list
+        function updateStepsList() {
+            const stepsList = document.getElementById('steps-list');
+            stepsList.innerHTML = '';
+            gameHistory.forEach((state, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'step-item px-3 py-2 border-bottom';
+                stepDiv.style.borderBottomColor = 'rgba(255, 255, 255, 0.1)';
+                stepDiv.style.color = '#e0e0e0';
+                let icon = '<i class="fas fa-play me-2 text-success"></i>';
+                if (state.description.includes('Naplněna')) {
+                    icon = '<i class="fas fa-faucet me-2 text-primary"></i>';
+                } else if (state.description.includes('Vyprázdněna')) {
+                    icon = '<i class="fas fa-tint-slash me-2 text-danger"></i>';
+                } else if (state.description.includes('Přelito')) {
+                    icon = '<i class="fas fa-exchange-alt me-2 text-warning"></i>';
+                }
+                stepDiv.innerHTML = `${icon}${index}. ${state.description}`;
+                if (index === 0) {
+                    stepDiv.style.borderBottom = 'none';
+                }
+                stepsList.appendChild(stepDiv);
+            });
+        }
+        
+        // Update undo button state
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undo-btn');
+            undoBtn.disabled = gameHistory.length <= 1;
+            
+            if (undoBtn.disabled) {
+                undoBtn.classList.remove('btn-purple');
+                undoBtn.classList.add('btn-secondary');
+            } else {
+                undoBtn.classList.remove('btn-secondary');
+                undoBtn.classList.add('btn-purple');
+            }
+        }
+        
+        // Check if player has won
+        function checkVictory() {
+            if (jugContents.includes(4)) {
+                showVictory();
+            }
+        }
+        
+        // Show victory message
+        function showVictory() {
+            document.getElementById('victory').classList.remove('d-none');
+        }
+        
+        // Hide victory message
+        function hideVictory() {
+            document.getElementById('victory').classList.add('d-none');
+        }
+        
+        // Load saved game state from localStorage
+        function loadGame() {
+            const saved = localStorage.getItem('jugsGameState');
+            if (saved) {
+                try {
+                    const gameState = JSON.parse(saved);
+                    jugContents = gameState.jugs || [0, 0, 0];
+                    gameHistory = gameState.history || [{jugs: [0, 0, 0], description: "Game started"}];
+                    stepCount = gameState.stepCount || 0;
+                    updateDisplay();
+                    updateStepsList();
+                    updateUndoButton();
+                    checkVictory();
+                } catch (e) {
+                    initGame();
+                }
+            } else {
+                initGame();
+            }
+        }
+        
+        // Save game state to localStorage
+        function saveGame() {
+            const gameState = {
+                jugs: jugContents,
+                history: gameHistory,
+                stepCount: stepCount
+            };
+            localStorage.setItem('jugsGameState', JSON.stringify(gameState));
+        }
+        
+        // Initialize the game when page loads
+        window.addEventListener('load', loadGame);
+        
+        // Save game state before page unloads
+        window.addEventListener('beforeunload', saveGame);
+        
+        // Auto-save every 30 seconds
+        setInterval(saveGame, 30000);
+        
+        // Add custom Bootstrap purple button style
+        const style = document.createElement('style');
+        style.textContent = `
+            .btn-purple {
+                background: linear-gradient(45deg, #9b59b6, #8e44ad);
+                border: none;
+                color: white;
+            }
+            .btn-purple:hover {
+                background: linear-gradient(45deg, #8e44ad, #7d3c98);
+                color: white;
+            }
+            .btn-purple:disabled {
+                background: #6c757d;
+                color: white;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
